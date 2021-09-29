@@ -1,3 +1,6 @@
+import Router from "@/router";
+import Layout from "@/layout";
+
 import { login, logout, getInfo } from "@/api/user";
 import { getToken, setToken, removeToken } from "@/utils/auth";
 import { resetRouter } from "@/router";
@@ -7,21 +10,52 @@ function _import(file) {
   return () => import("@/views/" + file + ".vue");
 }
 
-function filterRouter(routers) {
-  // 遍历后台传来的路由字符串，转换为组件对象
-  const accessedRouters = routers.filter(route => {
-    if (route.component) {
-      if (route.component === "Layout") {
-        // Layout 组件特殊处理
-        route.component = Layout;
+function deepClone(data) {
+  var t = type(data),
+    o,
+    i,
+    ni;
+
+  if (t === "array") {
+    o = [];
+  } else if (t === "object") {
+    o = {};
+  } else {
+    return data;
+  }
+
+  if (t === "array") {
+    for (i = 0, ni = data.length; i < ni; i++) {
+      o.push(deepClone(data[i]));
+    }
+    return o;
+  } else if (t === "object") {
+    for (i in data) {
+      o[i] = deepClone(data[i]);
+    }
+    return o;
+  }
+}
+
+function filterAsyncRouter(routers) {
+  const accessedRouters = routers.filter(router => {
+    if (router.component) {
+      if (router.component === "Layout") {
+        router.component = Layout;
       } else {
-        route.component = _import(route.component);
-        console.log("@/views/" + file + ".vue", "----------------->filePath");
-        console.log(route.name, route, "----------------->filterRouter");
+        const component = router.component;
+        console.log(
+          component,
+          "@/views/" + component + ".vue",
+          "----------------->filterAsyncRouter"
+        );
+        router.component = () => import("@/views/" + component + ".vue");
       }
     }
-    if (route.children && route.children.length) {
-      route.children = filterRouter(route.children);
+    if (router.children && router.children.length) {
+      router.children = filterAsyncRouter(router.children);
+    } else {
+      router.children = [];
     }
     return true;
   });
@@ -79,14 +113,41 @@ const actions = {
         .then(response => {
           const { data } = response;
           state.authRoutes = data;
+          let accessRoutes = filterAsyncRouter(data);
+          console.log(accessRoutes, "----------------->accessRoutes");
+          Router.addRoutes(accessRoutes); // 动态添加可访问路由表
+          //   next({ ...to, replace: true }); // hack方法 确保addRoutes已完成
+          // Router.matcher.addRoutes([
+          //   {
+          //     path: "/example",
+          //     component: Layout,
+          //     redirect: "/example/table",
+          //     name: "Example",
+          //     meta: { title: "Example", icon: "el-icon-s-help" },
+          //     children: [
+          //       {
+          //         path: "table",
+          //         name: "Table",
+          //         component: () => import("@/views/table/index"),
+          //         meta: { title: "Table", icon: "table" }
+          //       },
+          //       {
+          //         path: "tree",
+          //         name: "Tree",
+          //         component: () => import("@/views/tree/index"),
+          //         meta: { title: "Tree", icon: "tree" }
+          //       }
+          //     ]
+          //   }
+          // ]);
           if (!data) {
             return reject("Verification failed, please Login again.");
           }
 
           const { name, avatar } = data;
 
-          commit("SET_NAME", name);
-          commit("SET_AVATAR", avatar);
+          //   commit("SET_NAME", name);
+          //   commit("SET_AVATAR", avatar);
           resolve(data);
         })
         .catch(error => {
