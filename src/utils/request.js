@@ -7,14 +7,14 @@ import { getToken } from "@/utils/auth";
 const service = axios.create({
   baseURL: process.env.VUE_APP_BASE_API, // url = base url + request url
   // withCredentials: true, // send cookies when cross-domain requests
-  timeout: 5000 // request timeout
+  timeout: 25000 // request timeout
 });
 
 // request interceptor
 service.interceptors.request.use(
   config => {
     // do something before request is sent
-    console.log(store, "----------------->token");
+    // console.log(store, "----------------->token");
 
     if (store.getters.token) {
       // let each request carry token
@@ -59,11 +59,11 @@ service.interceptors.response.use(
       if (res.code === 401) {
         // to re-login
         MessageBox.confirm(
-          "You have been logged out, you can cancel to stay on this page, or log in again",
-          "Confirm logout",
+          "登录失效，请重新登录！！！",
+          "提 示",
           {
-            confirmButtonText: "Re-Login",
-            cancelButtonText: "Cancel",
+            confirmButtonText: "重新登录",
+            cancelButtonText: "取 消",
             type: "warning"
           }
         ).then(() => {

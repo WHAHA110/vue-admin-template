@@ -1,66 +1,10 @@
 import Router from "@/router";
-import Layout from "@/layout";
 
+import { filterAsyncRouter } from "@/utils/menu";
 import { login, logout, getInfo } from "@/api/user";
 import { getToken, setToken, removeToken } from "@/utils/auth";
 import { resetRouter } from "@/router";
-
-function _import(file) {
-  //   return () => import("@/views/table/index");
-  return () => import("@/views/" + file + ".vue");
-}
-
-function deepClone(data) {
-  var t = type(data),
-    o,
-    i,
-    ni;
-
-  if (t === "array") {
-    o = [];
-  } else if (t === "object") {
-    o = {};
-  } else {
-    return data;
-  }
-
-  if (t === "array") {
-    for (i = 0, ni = data.length; i < ni; i++) {
-      o.push(deepClone(data[i]));
-    }
-    return o;
-  } else if (t === "object") {
-    for (i in data) {
-      o[i] = deepClone(data[i]);
-    }
-    return o;
-  }
-}
-
-function filterAsyncRouter(routers) {
-  const accessedRouters = routers.filter(router => {
-    if (router.component) {
-      if (router.component === "Layout") {
-        router.component = Layout;
-      } else {
-        const component = router.component;
-        console.log(
-          component,
-          "@/views/" + component + ".vue",
-          "----------------->filterAsyncRouter"
-        );
-        router.component = () => import("@/views/" + component + ".vue");
-      }
-    }
-    if (router.children && router.children.length) {
-      router.children = filterAsyncRouter(router.children);
-    } else {
-      router.children = [];
-    }
-    return true;
-  });
-  return accessedRouters;
-}
+// import { push } from "mock/user";
 
 const getDefaultState = () => {
   return {
@@ -114,9 +58,9 @@ const actions = {
           const { data } = response;
           state.authRoutes = data;
           let accessRoutes = filterAsyncRouter(data);
-          console.log(accessRoutes, "----------------->accessRoutes");
+          accessRoutes.push({ path: "*", redirect: "/404", hidden: true });
+        //   console.log(accessRoutes, "----------------->accessRoutes");
           Router.addRoutes(accessRoutes); // 动态添加可访问路由表
-          //   next({ ...to, replace: true }); // hack方法 确保addRoutes已完成
           // Router.matcher.addRoutes([
           //   {
           //     path: "/example",
